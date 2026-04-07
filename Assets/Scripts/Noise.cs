@@ -3,7 +3,7 @@ using System.Collections;
 
 public static class Noise {
 
-	public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset) {
+	public static float[,] GenerateNoiseMap(float gradientIntensity, int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset) {
 		float[,] noiseMap = new float[mapWidth, mapHeight];
 		float[,] gradientMap = new float[mapWidth, mapHeight];
 
@@ -46,6 +46,28 @@ public static class Noise {
 				}
 			}
 
+			// Generate the gradient map
+			for (int y = 0; y < mapHeight; y++) {
+				for (int x = 0; x < mapWidth; x++) {
+					float dx = 0f;
+					float dy = 0f;
+
+					// dérivée en X
+					if (x < mapWidth - 1)
+						dx = octavesMaps[i, x + 1, y] - octavesMaps[i, x, y];
+
+					// dérivée en Y
+					if (y < mapHeight - 1)
+						dy = octavesMaps[i, x, y + 1] - octavesMaps[i, x, y];
+
+					float gradient = new Vector2(dx, dy).magnitude;
+					gradientMap[x, y] = gradient;
+
+					// Apply the gradient trick to this octave
+					octavesMaps[i, x, y] *= 1.0f / (1.0f + gradient * gradientIntensity);
+				}
+			}
+
 			// Get the next amplitude and frequency
 			amplitude *= persistance;
 			frequency *= lacunarity;
@@ -84,5 +106,4 @@ public static class Noise {
 
 		return noiseMap;
 	}
-
 }
