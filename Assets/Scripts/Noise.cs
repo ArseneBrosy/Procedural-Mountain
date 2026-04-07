@@ -1,0 +1,88 @@
+using UnityEngine;
+using System.Collections;
+
+public static class Noise {
+
+	public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset) {
+		float[,] noiseMap = new float[mapWidth, mapHeight];
+		float[,] gradientMap = new float[mapWidth, mapHeight];
+
+		// Generate the random offset for each octave based on the seed
+		System.Random prng = new System.Random(seed);
+		Vector2[] octaveOffsets = new Vector2[octaves];
+		for (int i = 0; i < octaves; i++) {
+			float offsetX = prng.Next(-100000, 100000) + offset.x;
+			float offsetY = prng.Next(-100000, 100000) + offset.y;
+			octaveOffsets[i] = new Vector2(offsetX, offsetY);
+		}
+
+		// Keep the scale over 0
+		if (scale <= 0) {
+			scale = 0.0001f;
+		}
+
+		float halfWidth = mapWidth / 2f;
+		float halfHeight = mapHeight / 2f;
+
+		float[,,] octavesMaps = new float[octaves, mapWidth, mapHeight];
+
+		// Set the base amplitude and frequency
+		float amplitude = 1;
+		float frequency = 1;
+
+		// Generate all octaves
+		for (int i = 0; i < octaves; i++) {
+
+			// Generate the Noisemap for this octave
+			for (int y = 0; y < mapHeight; y++) {
+				for (int x = 0; x < mapWidth; x++) {
+
+					// Get the octave noise value at sample point
+					float sampleX = (x - halfWidth) / scale * frequency + octaveOffsets[i].x;
+					float sampleY = (y - halfHeight) / scale * frequency + octaveOffsets[i].y;
+
+					float perlinValue = Mathf.PerlinNoise(sampleX, sampleY) * 2 - 1;
+					octavesMaps[i, x, y] = perlinValue * amplitude;
+				}
+			}
+
+			// Get the next amplitude and frequency
+			amplitude *= persistance;
+			frequency *= lacunarity;
+		}
+
+		// Combinate octaves into one noiseMap
+		float maxNoiseHeight = float.MinValue;
+		float minNoiseHeight = float.MaxValue;
+
+		for (int y = 0; y < mapHeight; y++) {
+			for (int x = 0; x < mapWidth; x++) {
+
+				// Add all octaves
+				float noiseHeight = 0;
+				for (int i = 0; i < octaves; i++) {
+					noiseHeight += octavesMaps[i, x, y];
+				}
+
+				// Get the min and max values of the noise map
+				if (noiseHeight > maxNoiseHeight) {
+					maxNoiseHeight = noiseHeight;
+				} else if (noiseHeight < minNoiseHeight) {
+					minNoiseHeight = noiseHeight;
+				}
+
+				noiseMap[x, y] = noiseHeight;
+			}
+		}
+
+		// Normalize the Noisemap
+		for (int y = 0; y < mapHeight; y++) {
+			for (int x = 0; x < mapWidth; x++) {
+				noiseMap[x, y] = Mathf.InverseLerp(minNoiseHeight, maxNoiseHeight, noiseMap[x, y]);
+			}
+		}
+
+		return noiseMap;
+	}
+
+}
