@@ -3,7 +3,7 @@ using System.Collections;
 
 public static class Noise {
 
-	public static float[,] GenerateNoiseMap(float gradientIntensity, int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset) {
+	public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset, float gradientIntensity, float centerIntensity) {
 		float[,] noiseMap = new float[mapWidth, mapHeight];
 		float[,] gradientMap = new float[mapWidth, mapHeight];
 
@@ -25,6 +25,13 @@ public static class Noise {
 		float halfHeight = mapHeight / 2f;
 
 		float[,,] octavesMaps = new float[octaves, mapWidth, mapHeight];
+
+		// Create a blank gradient map
+		for (int y = 0; y < mapHeight; y++) {
+			for (int x = 0; x < mapWidth; x++) {
+				gradientMap[x, y] = 0f;
+			}
+		}
 
 		// Set the base amplitude and frequency
 		float amplitude = 1;
@@ -52,19 +59,20 @@ public static class Noise {
 					float dx = 0f;
 					float dy = 0f;
 
-					// dérivée en X
+					// X derivative
 					if (x < mapWidth - 1)
 						dx = octavesMaps[i, x + 1, y] - octavesMaps[i, x, y];
 
-					// dérivée en Y
+					// Y derivative
 					if (y < mapHeight - 1)
 						dy = octavesMaps[i, x, y + 1] - octavesMaps[i, x, y];
 
+					// Update the combined gradient map
 					float gradient = new Vector2(dx, dy).magnitude;
-					gradientMap[x, y] = gradient;
+					gradientMap[x, y] += gradient;
 
-					// Apply the gradient trick to this octave
-					octavesMaps[i, x, y] *= 1.0f / (1.0f + gradient * gradientIntensity);
+					// Apply the gradient trick to errode this octave
+					octavesMaps[i, x, y] *= 1.0f / (1.0f + gradientMap[x, y] * gradientIntensity);
 				}
 			}
 
@@ -101,6 +109,27 @@ public static class Noise {
 		for (int y = 0; y < mapHeight; y++) {
 			for (int x = 0; x < mapWidth; x++) {
 				noiseMap[x, y] = Mathf.InverseLerp(minNoiseHeight, maxNoiseHeight, noiseMap[x, y]);
+			}
+		}
+
+		// Calculate the distance form the center
+		float[,] centerMap = new float[mapWidth, mapHeight];
+
+		for (int y = 0; y < mapHeight; y++) {
+			for (int x = 0; x < mapWidth; x++) {
+				float distanceToCenter = Mathf.Sqrt(Mathf.Pow(halfWidth - x, 2) + Mathf.Pow(halfHeight - y, 2));
+				distanceToCenter /= Mathf.Sqrt(Mathf.Pow(halfWidth, 2) + Mathf.Pow(halfWidth, 2));
+
+				centerMap[x, y] = 1 - Mathf.Pow(centerIntensity, distanceToCenter * distanceToCenter * -1f);
+			}
+		}
+
+		// Intensify the center of the map
+		// Normalize the Noisemap
+		for (int y = 0; y < mapHeight; y++) {
+			for (int x = 0; x < mapWidth; x++) {
+				noiseMap[x, y] += centerMap[x, y];
+				noiseMap[x, y] /= 2f;
 			}
 		}
 
