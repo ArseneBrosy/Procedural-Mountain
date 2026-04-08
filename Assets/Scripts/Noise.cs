@@ -108,7 +108,7 @@ public static class Noise {
 		// Normalize the Noisemap
 		for (int y = 0; y < mapHeight; y++) {
 			for (int x = 0; x < mapWidth; x++) {
-				noiseMap[x, y] = Mathf.InverseLerp(minNoiseHeight, maxNoiseHeight, noiseMap[x, y]);
+				noiseMap[x, y] = 1 - Mathf.InverseLerp(minNoiseHeight, maxNoiseHeight, noiseMap[x, y]);
 			}
 		}
 
@@ -120,16 +120,14 @@ public static class Noise {
 				float distanceToCenter = Mathf.Sqrt(Mathf.Pow(halfWidth - x, 2) + Mathf.Pow(halfHeight - y, 2));
 				distanceToCenter /= Mathf.Sqrt(Mathf.Pow(halfWidth, 2) + Mathf.Pow(halfWidth, 2));
 
-				centerMap[x, y] = 1 - Mathf.Pow(centerIntensity, distanceToCenter * distanceToCenter * -1f);
+				centerMap[x, y] = Mathf.Pow(centerIntensity, distanceToCenter * distanceToCenter * -1f);
 			}
 		}
 
 		// Intensify the center of the map
-		// Normalize the Noisemap
 		for (int y = 0; y < mapHeight; y++) {
 			for (int x = 0; x < mapWidth; x++) {
-				noiseMap[x, y] += centerMap[x, y];
-				noiseMap[x, y] /= 2f;
+				noiseMap[x, y] *= centerMap[x, y];
 			}
 		}
 
