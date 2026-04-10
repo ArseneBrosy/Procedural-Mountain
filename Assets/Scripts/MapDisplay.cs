@@ -6,6 +6,8 @@ public class MapDisplay : MonoBehaviour {
 	public Renderer textureRender;
 	public MeshFilter meshFilter;
 	public MeshRenderer meshRenderer;
+	public MeshFilter chunkMeshFilter;
+	public MeshRenderer chunkMeshRenderer;
 
 	public void DrawTexture(Texture2D texture) {
 		textureRender.sharedMaterial.mainTexture = texture;
@@ -17,4 +19,8 @@ public class MapDisplay : MonoBehaviour {
 		meshRenderer.sharedMaterial.mainTexture = texture;
 	}
 
+	public void DrawChunkMesh(MeshData meshData, Texture2D texture) {
+		chunkMeshFilter.sharedMesh = meshData.CreateMesh();
+		chunkMeshRenderer.sharedMaterial.mainTexture = texture;
+	}
 }

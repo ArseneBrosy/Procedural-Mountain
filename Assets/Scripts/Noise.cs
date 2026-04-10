@@ -3,9 +3,11 @@ using System.Collections;
 
 public static class Noise {
 
+	static float[,] noiseMap;
+
 	public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset, float gradientIntensity, float centerIntensity) {
-		float[,] noiseMap = new float[mapWidth, mapHeight];
-		float[,] gradientMap = new float[mapWidth, mapHeight];
+		noiseMap = new float[mapWidth, mapHeight];
+		Vector2[,] gradientMap = new Vector2[mapWidth, mapHeight];
 
 		// Generate the random offset for each octave based on the seed
 		System.Random prng = new System.Random(seed);
@@ -29,7 +31,7 @@ public static class Noise {
 		// Create a blank gradient map
 		for (int y = 0; y < mapHeight; y++) {
 			for (int x = 0; x < mapWidth; x++) {
-				gradientMap[x, y] = 0f;
+				gradientMap[x, y] = Vector2.zero;
 			}
 		}
 
@@ -68,11 +70,11 @@ public static class Noise {
 						dy = octavesMaps[i, x, y + 1] - octavesMaps[i, x, y];
 
 					// Update the combined gradient map
-					float gradient = new Vector2(dx, dy).magnitude;
+					Vector2 gradient = new Vector2(dx, dy);
 					gradientMap[x, y] += gradient;
 
 					// Apply the gradient trick to errode this octave
-					octavesMaps[i, x, y] *= 1.0f / (1.0f + gradientMap[x, y] * gradientIntensity);
+					octavesMaps[i, x, y] *= 1.0f / (1.0f + gradientMap[x, y].magnitude * gradientIntensity);
 				}
 			}
 
@@ -132,5 +134,41 @@ public static class Noise {
 		}
 
 		return noiseMap;
+	}
+
+	public static float[,] GenerateChunkNoiseMap(int chunkX, int chunkY, int chunkSize, int chunkWidth) {
+		float[,] chunkNoiseMap = new float[chunkWidth, chunkWidth];
+
+		int startX = chunkX * chunkSize;
+		int startY = chunkY * chunkSize;
+
+		for (int y = 0; y < chunkWidth; y++) {
+			for (int x = 0; x < chunkWidth; x++) {
+				float noiseMapX = startX + x * (float)chunkSize / chunkWidth;
+				float noiseMapY = startY + y * (float)chunkSize / chunkWidth;
+				int noiseMapLeft = Mathf.FloorToInt(noiseMapX);
+				int noiseMapTop = Mathf.FloorToInt(noiseMapY);
+
+				float height = BilinearInterpolation(
+					noiseMap[noiseMapLeft, noiseMapTop + 1],
+					noiseMap[noiseMapLeft + 1, noiseMapTop + 1],
+					noiseMap[noiseMapLeft, noiseMapTop],
+					noiseMap[noiseMapLeft + 1, noiseMapTop],
+					noiseMapX - noiseMapLeft,
+					noiseMapY - noiseMapTop
+				);
+
+				chunkNoiseMap[x, y] = height;
+            }
+        }
+
+		return chunkNoiseMap;
+    }
+
+	public static float BilinearInterpolation(float f00, float f10, float f01, float f11, float x, float y) {
+		float r1 = f00 + x * (f10 - f00);
+		float r2 = f01 + x * (f11 - f01);
+
+		return r2 + y * (r1 - r2);
 	}
 }

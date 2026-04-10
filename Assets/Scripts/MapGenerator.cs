@@ -25,12 +25,24 @@ public class MapGenerator : MonoBehaviour {
 	public int seed;
 	public Vector2 offset;
 
+	[Space]
+	public int chunkSize;
+	public int chunkWidth;
+	public int chunkX;
+	public int chunkY;
+
+	[Space]
+	[Range(0, 1)] public float forestMaxHeight;
+	[Min(0)] public float forestMaxGradient;
+
 	public bool autoUpdate;
 
 	public TerrainType[] regions;
 
+	float[,] noiseMap;
+
 	public void GenerateMap() {
-		float[,] noiseMap = Noise.GenerateNoiseMap(mapWidth, mapHeight, seed, noiseScale, octaves, persistance, lacunarity, offset, gradientIntensity, centerIntensity);
+		noiseMap = Noise.GenerateNoiseMap(mapWidth, mapHeight, seed, noiseScale, octaves, persistance, lacunarity, offset, gradientIntensity, centerIntensity);
 
 		Color[] colourMap = new Color[mapWidth * mapHeight];
 		for (int y = 0; y < mapHeight; y++) {
@@ -51,8 +63,20 @@ public class MapGenerator : MonoBehaviour {
 		} else if (drawMode == DrawMode.ColourMap) {
 			display.DrawTexture(TextureGenerator.TextureFromColourMap(colourMap, mapWidth, mapHeight));
 		} else if (drawMode == DrawMode.Mesh) {
-			display.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap, meshHeight), TextureGenerator.TextureFromHeightMap(noiseMap));
+			int width = noiseMap.GetLength(0);
+			int height = noiseMap.GetLength(1);
+			int[,] biomeMap = BiomesGenerator.GenerateBiomeMap(noiseMap, forestMaxHeight, forestMaxGradient);
+			display.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap, meshHeight, (width - 1) / -2f, (height - 1) / 2f), TextureGenerator.TextureFromBiomeMap(biomeMap));
 		}
+	}
+
+	public void GenerateChunk(int x, int y) {
+		float[,] chunkNoiseMap = Noise.GenerateChunkNoiseMap(x, y, chunkSize, chunkWidth);
+
+		MapDisplay display = FindFirstObjectByType<MapDisplay>();
+		int width = noiseMap.GetLength(0);
+		int height = noiseMap.GetLength(1);
+		display.DrawChunkMesh(MeshGenerator.GenerateTerrainMesh(chunkNoiseMap, meshHeight, (width - 1) / -2f + chunkSize * x, (height - 1) / 2f - chunkSize * y, (float)chunkSize / chunkWidth), TextureGenerator.TextureFromHeightMap(chunkNoiseMap));
 	}
 
 	void OnValidate() {

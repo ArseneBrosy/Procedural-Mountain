@@ -12,7 +12,6 @@ public static class TextureGenerator {
 		return texture;
 	}
 
-
 	public static Texture2D TextureFromHeightMap(float[,] heightMap) {
 		int width = heightMap.GetLength(0);
 		int height = heightMap.GetLength(1);
@@ -27,4 +26,19 @@ public static class TextureGenerator {
 		return TextureFromColourMap(colourMap, width, height);
 	}
 
+	public static Texture2D TextureFromBiomeMap(int[,] biomeMap) {
+		int width = biomeMap.GetLength(0);
+		int height = biomeMap.GetLength(1);
+
+		BiomesGenerator.GenerateBiomes();
+
+		Color[] colourMap = new Color[width * height];
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				colourMap[y * width + x] = BiomesGenerator.biomes[biomeMap[x, y]].color;
+			}
+		}
+
+		return TextureFromColourMap(colourMap, width, height);
+	}
 }

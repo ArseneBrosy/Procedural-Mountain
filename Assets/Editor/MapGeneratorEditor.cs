@@ -11,11 +11,16 @@ public class MapGeneratorEditor : Editor {
 		if (DrawDefaultInspector()) {
 			if (mapGen.autoUpdate) {
 				mapGen.GenerateMap();
+				mapGen.GenerateChunk(mapGen.chunkX, mapGen.chunkY);
 			}
 		}
 
 		if (GUILayout.Button("Generate")) {
 			mapGen.GenerateMap();
 		}
+
+		if (GUILayout.Button("Generate chunk")) {
+			mapGen.GenerateChunk(mapGen.chunkX, mapGen.chunkY);
+        }
 	}
 }
